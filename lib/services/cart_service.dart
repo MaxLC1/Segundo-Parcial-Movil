@@ -74,6 +74,20 @@ class CartService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void incrementQuantity(CartItem item) {
+    item.cantidad += 1;
+    notifyListeners();
+  }
+
+  void decrementQuantity(CartItem item) {
+    if (item.cantidad > 1) {
+      item.cantidad -= 1;
+    } else {
+      _items.remove(item);
+    }
+    notifyListeners();
+  }
+
   void removeItem(int productoId) {
     _items.removeWhere((item) => item.productoId == productoId);
     notifyListeners();

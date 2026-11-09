@@ -69,6 +69,84 @@ class _CatalogScreenState extends State<CatalogScreen> {
     }
   }
 
+  void _configurarServidor() {
+    final controller = TextEditingController(text: ApiService.baseUrl);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Configurar Servidor Backend'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'En teléfono físico usa la IP de tu PC en la red Wi-Fi:\n'
+              'http://192.168.100.4:8000/api/v1\n\n'
+              'En emulador Android Studio:\n'
+              'http://10.0.2.2:8000/api/v1',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'URL Base API',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    controller.text = 'http://34.230.18.9:8000/api/v1';
+                  },
+                  child: const Text('AWS Cloud (34.230.18.9)'),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    controller.text = 'http://127.0.0.1:8000/api/v1';
+                  },
+                  child: const Text('USB (127.0.0.1)'),
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    controller.text = 'http://192.168.100.4:8000/api/v1';
+                  },
+                  child: const Text('Wi-Fi (192.168.100.4)'),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEA580C),
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              final newUrl = controller.text.trim();
+              if (newUrl.isNotEmpty) {
+                await ApiService.setBaseUrl(newUrl);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  _loadProductos();
+                }
+              }
+            },
+            child: const Text('Guardar y Recargar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _abrirAR(String? url3d, String nombreProducto) {
     if (url3d == null || url3d.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -104,120 +182,172 @@ class _CatalogScreenState extends State<CatalogScreen> {
 
       showModalBottomSheet(
         context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
         builder: (context) {
           return StatefulBuilder(
             builder: (context, setStateModal) {
-              return Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(
-                      p['nombre'],
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+              return SafeArea(
+                child: Padding(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).viewInsets.bottom,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: MediaQuery.of(context).size.height * 0.85,
+                    ),
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24.0,
+                        vertical: 16.0,
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Bs ${p['precio'] ?? 0}',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        color: Color(0xFFEA580C),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    const Text(
-                      'Selecciona Talla:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      children: tallas.map((t) {
-                        final isSelected = selectedTallaId == t['id'];
-                        return ChoiceChip(
-                          label: Text(t['nombre'] as String),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setStateModal(() {
-                                selectedTallaId = t['id'] as int;
-                                selectedTallaNombre = t['nombre'] as String;
-                              });
-                            }
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 16),
-
-                    const Text(
-                      'Selecciona Color:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    Wrap(
-                      spacing: 8,
-                      children: colores.map((c) {
-                        final isSelected = selectedColorId == c['id'];
-                        return ChoiceChip(
-                          label: Text(c['nombre'] as String),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            if (selected) {
-                              setStateModal(() {
-                                selectedColorId = c['id'] as int;
-                                selectedColorNombre = c['nombre'] as String;
-                              });
-                            }
-                          },
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 24),
-
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFEA580C),
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      onPressed: () {
-                        CartService().addItem(
-                          p['id'],
-                          p['nombre'],
-                          (p['precio'] as num).toDouble(),
-                          tallaId: selectedTallaId,
-                          tallaName: selectedTallaNombre,
-                          colorId: selectedColorId,
-                          colorName: selectedColorNombre,
-                        );
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('¡Añadido a la bolsa!'),
-                            duration: Duration(seconds: 1),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              margin: const EdgeInsets.only(bottom: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade300,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
                           ),
-                        );
-                      },
-                      child: const Text(
-                        'Añadir a la Bolsa',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
+                          Text(
+                            p['nombre'],
+                            style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Bs ${p['precio'] ?? 0}',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              color: Color(0xFFEA580C),
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            'Selecciona Talla:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: tallas.map((t) {
+                              final isSelected = selectedTallaId == t['id'];
+                              return ChoiceChip(
+                                label: Text(t['nombre'] as String),
+                                selected: isSelected,
+                                selectedColor: const Color(0xFFFFEDD5),
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? const Color(0xFFEA580C)
+                                      : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setStateModal(() {
+                                      selectedTallaId = t['id'] as int;
+                                      selectedTallaNombre =
+                                          t['nombre'] as String;
+                                    });
+                                  }
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 16),
+
+                          const Text(
+                            'Selecciona Color:',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: colores.map((c) {
+                              final isSelected = selectedColorId == c['id'];
+                              return ChoiceChip(
+                                label: Text(c['nombre'] as String),
+                                selected: isSelected,
+                                selectedColor: const Color(0xFFFFEDD5),
+                                labelStyle: TextStyle(
+                                  color: isSelected
+                                      ? const Color(0xFFEA580C)
+                                      : Colors.black87,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setStateModal(() {
+                                      selectedColorId = c['id'] as int;
+                                      selectedColorNombre =
+                                          c['nombre'] as String;
+                                    });
+                                  }
+                                },
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFEA580C),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              CartService().addItem(
+                                p['id'],
+                                p['nombre'],
+                                (p['precio'] as num).toDouble(),
+                                tallaId: selectedTallaId,
+                                tallaName: selectedTallaNombre,
+                                colorId: selectedColorId,
+                                colorName: selectedColorNombre,
+                              );
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Añadido a la bolsa'),
+                                  duration: Duration(seconds: 1),
+                                ),
+                              );
+                            },
+                            child: const Text(
+                              'Añadir a la Bolsa',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
+                  ),
                 ),
               );
             },
@@ -241,6 +371,11 @@ class _CatalogScreenState extends State<CatalogScreen> {
         backgroundColor: const Color(0xFFEA580C),
         foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.dns_outlined),
+            tooltip: 'Configurar IP Servidor',
+            onPressed: _configurarServidor,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: 'Actualizar Catálogo',
@@ -297,9 +432,9 @@ class _CatalogScreenState extends State<CatalogScreen> {
                     itemBuilder: (context, index) {
                       final p = productos[index];
 
-                      String? imgUrl = p['imagen_url']?.toString();
-                      String? url3d = p['modelo_3d_url']?.toString();
-                      final tieneAR = url3d != null && url3d.isNotEmpty;
+                      String? imgUrl = ApiService.resolveMediaUrl(p['imagen_url']?.toString());
+                      String? url3d = ApiService.resolveMediaUrl(p['modelo_3d_url']?.toString());
+                      final tieneAR = url3d.isNotEmpty;
 
                       return Card(
                         elevation: 4,
@@ -321,7 +456,7 @@ class _CatalogScreenState extends State<CatalogScreen> {
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(16),
                                   ),
-                                  child: (imgUrl != null && imgUrl.isNotEmpty)
+                                  child: imgUrl.isNotEmpty
                                       ? Image.network(
                                           imgUrl,
                                           fit: BoxFit.cover,

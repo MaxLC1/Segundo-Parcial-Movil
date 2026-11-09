@@ -438,59 +438,243 @@ class _CartScreenState extends State<CartScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: _cart,
-      builder: (context, _) {
-        if (_cart.items.isEmpty) {
-          return const Center(
-            child: Text(
-              'Tu bolsa de reservas está vacía.',
-              style: TextStyle(fontSize: 16),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Bolsa de Reservas'),
+        backgroundColor: const Color(0xFF1E293B),
+        foregroundColor: Colors.white,
+        actions: [
+          if (_cart.items.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep_outlined),
+              tooltip: 'Vaciar bolsa',
+              onPressed: () => _cart.clear(),
             ),
-          );
-        }
-
-        return Column(
-          children: [
-            Expanded(
-              child: ListView.builder(
-                itemCount: _cart.items.length,
-                itemBuilder: (context, index) {
-                  final item = _cart.items[index];
-                  return Card(
-                    margin: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    child: ListTile(
-                      title: Text(
-                        item.nombre,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+        ],
+      ),
+      body: ListenableBuilder(
+        listenable: _cart,
+        builder: (context, _) {
+          if (_cart.items.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFEDD5),
+                        shape: BoxShape.circle,
                       ),
-                      subtitle: Text(
-                        'Cantidad: ${item.cantidad}  -  Unitario: Bs ${item.precioUnitario}',
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            'Bs ${item.subtotal}',
-                            style: const TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                            ),
-                            onPressed: () => _cart.removeItem(item.productoId),
-                          ),
-                        ],
+                      child: const Icon(
+                        Icons.shopping_bag_outlined,
+                        size: 64,
+                        color: Color(0xFFEA580C),
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Tu bolsa de reservas está vacía',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Explora nuestro catálogo y selecciona las prendas que deseas reservar.',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  itemCount: _cart.items.length,
+                  itemBuilder: (context, index) {
+                    final item = _cart.items[index];
+                    return Card(
+                      elevation: 2,
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFFEDD5),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.checkroom,
+                                color: Color(0xFFEA580C),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.nombre,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Wrap(
+                                    spacing: 6,
+                                    children: [
+                                      if (item.tallaName != 'N/A')
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Talla: ${item.tallaName}',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                      if (item.colorName != 'N/A')
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade100,
+                                            borderRadius:
+                                                BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: Colors.grey.shade300,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            'Color: ${item.colorName}',
+                                            style: const TextStyle(
+                                              fontSize: 11,
+                                              color: Colors.black87,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Bs ${item.precioUnitario} c/u',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Bs ${item.subtotal}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                    color: Color(0xFFEA580C),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    InkWell(
+                                      onTap: () =>
+                                          _cart.decrementQuantity(item),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade200,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: const Icon(
+                                          Icons.remove,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                      ),
+                                      child: Text(
+                                        '${item.cantidad}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                    InkWell(
+                                      onTap: () =>
+                                          _cart.incrementQuantity(item),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey.shade200,
+                                          borderRadius:
+                                              BorderRadius.circular(6),
+                                        ),
+                                        child: const Icon(
+                                          Icons.add,
+                                          size: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
 
             // Footer con selección de sucursal y total
             Container(
@@ -512,6 +696,7 @@ class _CartScreenState extends State<CartScreen> {
                     // Tipo de Entrega
                     DropdownButtonFormField<String>(
                       value: _tipoEntrega,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         labelText: '¿Cómo quieres recibir tu pedido?',
                         border: OutlineInputBorder(
@@ -527,7 +712,7 @@ class _CartScreenState extends State<CartScreen> {
                       ) {
                         return DropdownMenuItem<String>(
                           value: val,
-                          child: Text(val),
+                          child: Text(val, overflow: TextOverflow.ellipsis),
                         );
                       }).toList(),
                       onChanged: (newValue) =>
@@ -542,6 +727,7 @@ class _CartScreenState extends State<CartScreen> {
                       else
                         DropdownButtonFormField<int>(
                           value: _selectedSucursalId,
+                          isExpanded: true,
                           decoration: InputDecoration(
                             labelText: 'Selecciona una Sucursal',
                             border: OutlineInputBorder(
@@ -559,6 +745,7 @@ class _CartScreenState extends State<CartScreen> {
                               value: sucursal['id'],
                               child: Text(
                                 '${sucursal['nombre']} - ${sucursal['direccion']}',
+                                overflow: TextOverflow.ellipsis,
                               ),
                             );
                           }).toList(),
@@ -588,6 +775,7 @@ class _CartScreenState extends State<CartScreen> {
                     // Método de pago para ambos (Delivery y Recojo)
                     DropdownButtonFormField<String>(
                       value: _metodoPago,
+                      isExpanded: true,
                       decoration: InputDecoration(
                         labelText: 'Método de Pago',
                         border: OutlineInputBorder(
@@ -607,6 +795,7 @@ class _CartScreenState extends State<CartScreen> {
                                 : (val == 'QR'
                                       ? 'Pago con QR'
                                       : 'Tarjeta Stripe'),
+                            overflow: TextOverflow.ellipsis,
                           ),
                         );
                       }).toList(),
@@ -670,8 +859,9 @@ class _CartScreenState extends State<CartScreen> {
           ],
         );
       },
-    );
-  }
+    ),
+  );
+}
 }
 
 // Formatters para Tarjeta

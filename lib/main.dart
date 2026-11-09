@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
+import 'screens/delivery_screen.dart';
 import 'services/api_service.dart';
 
 void main() async {
@@ -34,6 +35,10 @@ class TiendaARApp extends StatelessWidget {
             );
           }
           if (snapshot.hasData && snapshot.data != null) {
+            final payload = ApiService().decodeJwt(snapshot.data!);
+            if (payload['rol'] == 'Repartidor') {
+              return const DeliveryScreen();
+            }
             return const MainScreen();
           }
           return const LoginScreen();

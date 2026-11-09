@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/offline_db_service.dart';
 import '../services/offline_sync_service.dart';
 import '../services/api_service.dart';
+import 'login_screen.dart';
 
 class OfflineSyncScreen extends StatefulWidget {
   const OfflineSyncScreen({super.key});
@@ -348,17 +349,53 @@ class _OfflineSyncScreenState extends State<OfflineSyncScreen>
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(Icons.info_outline, color: _feedbackColor, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(
-                      _syncFeedback!,
-                      style: TextStyle(
-                        color: _feedbackColor,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _syncFeedback!,
+                          style: TextStyle(
+                            color: _feedbackColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (_syncFeedback!.toLowerCase().contains('vencida') ||
+                            _syncFeedback!.toLowerCase().contains('inválida') ||
+                            _syncFeedback!.toLowerCase().contains('invalida') ||
+                            _syncFeedback!.toLowerCase().contains('inicie') ||
+                            _syncFeedback!.toLowerCase().contains('401')) ...[
+                          const SizedBox(height: 6),
+                          GestureDetector(
+                            onTap: () async {
+                              await ApiService().logout();
+                              if (context.mounted) {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const LoginScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
+                            },
+                            child: const Text(
+                              'Tu sesión expiró. Toca aquí para Iniciar Sesión nuevamente.',
+                              style: TextStyle(
+                                color: Colors.red,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

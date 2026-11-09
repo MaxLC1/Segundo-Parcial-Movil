@@ -15,14 +15,17 @@ class ApiException implements Exception {
 }
 
 class ApiService {
-  // Configuración de URL base (configurable para emulador Android 10.0.2.2, localhost o IP LAN)
-  static String baseUrl = 'http://10.0.2.2:8000/api/v1';
+  // Configuración de URL base (127.0.0.1 funciona directo por USB con adb reverse en Android Studio)
+  static String baseUrl = 'http://127.0.0.1:8000/api/v1';
 
   static Future<void> initBaseUrl() async {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString('custom_base_url');
-    if (savedUrl != null && savedUrl.isNotEmpty) {
+    if (savedUrl != null && savedUrl.isNotEmpty && !savedUrl.contains('10.0.2.2')) {
       baseUrl = savedUrl;
+    } else {
+      baseUrl = 'http://127.0.0.1:8000/api/v1';
+      await prefs.setString('custom_base_url', baseUrl);
     }
   }
 
@@ -30,6 +33,26 @@ class ApiService {
     baseUrl = newUrl;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('custom_base_url', newUrl);
+  }
+
+  /// Resuelve URLs relativas o con localhost a la dirección accesible por el dispositivo móvil
+  static String resolveMediaUrl(String? url) {
+    if (url == null || url.isEmpty) return '';
+    try {
+      final baseUri = Uri.parse(baseUrl);
+      final origin = '${baseUri.scheme}://${baseUri.authority}';
+      if (url.startsWith('/')) {
+        return '$origin$url';
+      }
+      if (url.contains('localhost')) {
+        return url
+            .replaceAll('localhost:8000', baseUri.authority)
+            .replaceAll('localhost', baseUri.host);
+      }
+      return url;
+    } catch (_) {
+      return url;
+    }
   }
 
   Future<Map<String, dynamic>?> registrarCliente(
@@ -343,8 +366,12 @@ class ApiService {
 
   Future<int> getEmpresaId() async {
     final token = await getToken();
-    if (token == null) throw Exception('Inicie sesión');
-    return decodeJwt(token)['empresa_id'] as int;
+    if (token == null) return 1;
+    final payload = decodeJwt(token);
+    final empId = payload['empresa_id'];
+    if (empId is int) return empId;
+    if (empId is String) return int.tryParse(empId) ?? 1;
+    return 1;
   }
 
   Future<Map<String, String>> authHeaders() async {

@@ -38,11 +38,7 @@ class _VestidorScreenState extends State<VestidorScreen> {
       setState(() {
         _productos = data.where((p) => p['imagen_url'] != null).map((p) {
           if (p['imagen_url'] != null) {
-            // Reemplazamos la IP si hace falta, y usamos el endpoint proxy-nobg
-            String rawUrl = p['imagen_url'].toString().replaceAll(
-              'localhost',
-              '10.0.2.2',
-            );
+            String rawUrl = ApiService.resolveMediaUrl(p['imagen_url'].toString());
             p['imagen_url'] =
                 '${ApiService.baseUrl}/archivos/proxy-nobg?url=${Uri.encodeComponent(rawUrl)}';
           }
