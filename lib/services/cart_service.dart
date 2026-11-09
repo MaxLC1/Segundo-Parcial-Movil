@@ -5,9 +5,9 @@ class CartItem {
   final String nombre;
   final double precioUnitario;
   int cantidad;
-  
+
   // Valores fijos temporales para enviar a la API
-  int tallaId; 
+  int tallaId;
   int colorId;
   String colorName;
   String tallaName;
@@ -40,21 +40,36 @@ class CartService extends ChangeNotifier {
     return _items.fold(0, (sum, item) => sum + item.subtotal);
   }
 
-  void addItem(int productoId, String nombre, double precioUnitario, {int tallaId = 1, int colorId = 1, String colorName = 'N/A', String tallaName = 'N/A'}) {
+  void addItem(
+    int productoId,
+    String nombre,
+    double precioUnitario, {
+    int tallaId = 1,
+    int colorId = 1,
+    String colorName = 'N/A',
+    String tallaName = 'N/A',
+  }) {
     // Verificar si ya existe en el carrito
-    final existingIndex = _items.indexWhere((item) => item.productoId == productoId && item.tallaId == tallaId && item.colorId == colorId);
+    final existingIndex = _items.indexWhere(
+      (item) =>
+          item.productoId == productoId &&
+          item.tallaId == tallaId &&
+          item.colorId == colorId,
+    );
     if (existingIndex >= 0) {
       _items[existingIndex].cantidad += 1;
     } else {
-      _items.add(CartItem(
-        productoId: productoId,
-        nombre: nombre,
-        precioUnitario: precioUnitario,
-        tallaId: tallaId,
-        colorId: colorId,
-        colorName: colorName,
-        tallaName: tallaName,
-      ));
+      _items.add(
+        CartItem(
+          productoId: productoId,
+          nombre: nombre,
+          precioUnitario: precioUnitario,
+          tallaId: tallaId,
+          colorId: colorId,
+          colorName: colorName,
+          tallaName: tallaName,
+        ),
+      );
     }
     notifyListeners();
   }

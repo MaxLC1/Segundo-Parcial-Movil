@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../services/api_service.dart';
 import 'main_screen.dart';
 import 'register_screen.dart';
@@ -15,7 +16,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _api = ApiService();
-  
+
   String correo = '';
   String password = '';
   bool isLoading = false;
@@ -24,18 +25,19 @@ class _LoginScreenState extends State<LoginScreen> {
   void _iniciarSesion() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
-    
+
     setState(() => isLoading = true);
-    
+
     try {
       final response = await _api.login(correo, password);
       if (response != null) {
         if (!mounted) return;
-        
+
         final token = await _api.getToken();
+        if (!mounted) return;
         if (token != null) {
           final payload = _api.decodeJwt(token);
-          
+
           if (payload['rol'] == 'Repartidor') {
             Navigator.pushReplacement(
               context,
@@ -44,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
             return;
           }
         }
-        
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const MainScreen()),
@@ -76,9 +78,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Bienvenido de vuelta',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
-              const Text('Inicia sesión para ver tu catálogo AR', style: TextStyle(color: Colors.grey)),
+              const Text(
+                'Inicia sesión para ver tu catálogo AR',
+                style: TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 40),
-              
+
               Form(
                 key: _formKey,
                 child: Column(
@@ -92,7 +97,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: Icon(Icons.email),
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (v) => !v!.contains('@') ? 'Correo inválido' : null,
+                      validator: (v) =>
+                          !v!.contains('@') ? 'Correo inválido' : null,
                       onSaved: (v) => correo = v!,
                     ),
                     const SizedBox(height: 16),
@@ -105,7 +111,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: const Icon(Icons.lock),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -116,7 +124,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       obscureText: _obscurePassword,
-                      validator: (v) => v!.isEmpty ? 'Ingresa tu contraseña' : null,
+                      validator: (v) =>
+                          v!.isEmpty ? 'Ingresa tu contraseña' : null,
                       onSaved: (v) => password = v!,
                     ),
                     const SizedBox(height: 32),
@@ -129,9 +138,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           foregroundColor: Colors.white,
                         ),
                         onPressed: isLoading ? null : _iniciarSesion,
-                        child: isLoading 
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Iniciar Sesión', style: TextStyle(fontSize: 18)),
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Iniciar Sesión',
+                                style: TextStyle(fontSize: 18),
+                              ),
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -139,10 +153,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       onPressed: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const RegisterScreen()),
+                          MaterialPageRoute(
+                            builder: (context) => const RegisterScreen(),
+                          ),
                         );
                       },
-                      child: const Text('¿No tienes cuenta? Regístrate aquí', style: TextStyle(color: Color(0xFFEA580C))),
+                      child: const Text(
+                        '¿No tienes cuenta? Regístrate aquí',
+                        style: TextStyle(color: Color(0xFFEA580C)),
+                      ),
                     ),
                   ],
                 ),

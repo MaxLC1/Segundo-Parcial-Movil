@@ -1,6 +1,18 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'offline_db_service.dart';
+import 'cart_service.dart';
+
+class ApiException implements Exception {
+  final String message;
+  final int status;
+  ApiException(this.message, this.status);
+  @override
+  String toString() => message;
+}
 
 class ApiService {
   // Configuración de URL base (configurable para emulador Android 10.0.2.2, localhost o IP LAN)
@@ -20,7 +32,12 @@ class ApiService {
     await prefs.setString('custom_base_url', newUrl);
   }
 
-  Future<Map<String, dynamic>?> registrarCliente(String nombre, String email, String password, {int empresaId = 1}) async {
+  Future<Map<String, dynamic>?> registrarCliente(
+    String nombre,
+    String email,
+    String password, {
+    int empresaId = 1,
+  }) async {
     final response = await http.post(
       Uri.parse('$baseUrl/seguridad/register'),
       headers: {'Content-Type': 'application/json'},
@@ -29,14 +46,16 @@ class ApiService {
         'email': email,
         'password': password,
         'rol_id': 4, // ID 4 = Cliente
-        'empresa_id': empresaId
+        'empresa_id': empresaId,
       }),
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
       return jsonDecode(response.body);
     } else {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error desconocido');
+      throw Exception(
+        jsonDecode(response.body)['detail'] ?? 'Error desconocido',
+      );
     }
   }
 
@@ -44,10 +63,7 @@ class ApiService {
     final response = await http.post(
       Uri.parse('$baseUrl/seguridad/login'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
+      body: jsonEncode({'email': email, 'password': password}),
     );
 
     if (response.statusCode == 200) {
@@ -55,7 +71,9 @@ class ApiService {
       await _saveToken(data['access_token']);
       return data;
     } else {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error desconocido');
+      throw Exception(
+        jsonDecode(response.body)['detail'] ?? 'Error desconocido',
+      );
     }
   }
 
@@ -73,6 +91,7 @@ class ApiService {
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('jwt_token');
+    CartService().clear();
   }
 
   Map<String, dynamic> decodeJwt(String token) {
@@ -92,14 +111,13 @@ class ApiService {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
       },
-      body: jsonEncode({
-        'user_id': userId,
-        'new_password': newPassword,
-      }),
+      body: jsonEncode({'user_id': userId, 'new_password': newPassword}),
     );
 
     if (response.statusCode != 200) {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al cambiar contraseña');
+      throw Exception(
+        jsonDecode(response.body)['detail'] ?? 'Error al cambiar contraseña',
+      );
     }
   }
 
@@ -109,8 +127,11 @@ class ApiService {
     if (empresaId != null) {
       url += '?empresa_id=$empresaId';
     }
-    final response = await http.get(Uri.parse(url));
-    
+    final response = await http.get(
+      Uri.parse(url),
+      headers: await authHeaders(),
+    );
+
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -119,7 +140,10 @@ class ApiService {
   }
 
   Future<List<dynamic>> getColores() async {
-    final response = await http.get(Uri.parse('$baseUrl/catalogo/colores/'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/catalogo/colores/'),
+      headers: await authHeaders(),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -128,7 +152,10 @@ class ApiService {
   }
 
   Future<List<dynamic>> getTallas() async {
-    final response = await http.get(Uri.parse('$baseUrl/catalogo/tallas/'));
+    final response = await http.get(
+      Uri.parse('$baseUrl/catalogo/tallas/'),
+      headers: await authHeaders(),
+    );
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -142,8 +169,11 @@ class ApiService {
     if (empresaId != null) {
       url += '?empresa_id=$empresaId';
     }
-    final response = await http.get(Uri.parse(url));
-    
+    final response = await http.get(
+      Uri.parse(url),
+      headers: await authHeaders(),
+    );
+
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
@@ -152,7 +182,11 @@ class ApiService {
   }
 
   // --- VENTAS Y RESERVAS DIRECTAS ---
-  Future<void> crearReserva(List<dynamic> items, int sucursalId) async {
+  Future<void> crearReserva(
+    List<dynamic> items,
+    int sucursalId, {
+    String? operacionUuid,
+  }) async {
     final token = await getToken();
     if (token == null) throw Exception('No hay sesión activa.');
 
@@ -161,14 +195,19 @@ class ApiService {
 
     final body = {
       'sucursal_id': sucursalId,
+      'operacion_uuid': operacionUuid,
       'usuario_id': userId,
-      'detalles': items.map((item) => {
-        'producto_id': item.productoId,
-        'talla_id': item.tallaId,
-        'color_id': item.colorId,
-        'cantidad': item.cantidad,
-        'precio_unitario': item.precioUnitario,
-      }).toList(),
+      'detalles': items
+          .map(
+            (item) => {
+              'producto_id': item.productoId,
+              'talla_id': item.tallaId,
+              'color_id': item.colorId,
+              'cantidad': item.cantidad,
+              'precio_unitario': item.precioUnitario,
+            },
+          )
+          .toList(),
     };
 
     final response = await http.post(
@@ -181,31 +220,49 @@ class ApiService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al crear reserva');
+      throw ApiException(
+        (jsonDecode(response.body)['detail'] ?? 'Error al crear reserva')
+            .toString(),
+        response.statusCode,
+      );
     }
   }
 
-  Future<void> crearVenta(List<dynamic> items, String tipoEntrega, String direccionEnvio, String metodoPago) async {
+  Future<void> crearVenta(
+    List<dynamic> items,
+    String tipoEntrega,
+    String direccionEnvio,
+    String metodoPago, {
+    int? sucursalId,
+    String? cuponCodigo,
+    String? operacionUuid,
+  }) async {
     final token = await getToken();
     if (token == null) throw Exception('No hay sesión activa.');
 
     final decoded = decodeJwt(token);
-    final userId = decoded['id']; 
+    final userId = decoded['id'];
 
     final body = {
-      'sucursal_id': 1, 
+      'sucursal_id': sucursalId,
+      'operacion_uuid': operacionUuid,
+      'cupon_codigo': cuponCodigo,
       'usuario_id': userId,
       'metodo_pago': metodoPago,
       'transaccion_id': null,
       'tipo_entrega': tipoEntrega,
       'direccion_envio': direccionEnvio,
-      'detalles': items.map((item) => {
-        'producto_id': item.productoId,
-        'talla_id': item.tallaId,
-        'color_id': item.colorId,
-        'cantidad': item.cantidad,
-        'precio_unitario': item.precioUnitario,
-      }).toList(),
+      'detalles': items
+          .map(
+            (item) => {
+              'producto_id': item.productoId,
+              'talla_id': item.tallaId,
+              'color_id': item.colorId,
+              'cantidad': item.cantidad,
+              'precio_unitario': item.precioUnitario,
+            },
+          )
+          .toList(),
     };
 
     final response = await http.post(
@@ -218,7 +275,11 @@ class ApiService {
     );
 
     if (response.statusCode != 200 && response.statusCode != 201) {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error al crear la venta');
+      throw ApiException(
+        (jsonDecode(response.body)['detail'] ?? 'Error al crear la venta')
+            .toString(),
+        response.statusCode,
+      );
     }
   }
 
@@ -226,16 +287,16 @@ class ApiService {
   // PROTOCOLO DE SINCRONIZACIÓN OFFLINE EN LOTE (Desafíos III & IV)
   // ===========================================================================
 
-  Future<Map<String, dynamic>> sincronizarVentasLote(List<Map<String, dynamic>> operaciones) async {
+  Future<Map<String, dynamic>> sincronizarVentasLote(
+    List<Map<String, dynamic>> operaciones,
+  ) async {
     final token = await getToken();
     final headers = {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
 
-    final body = jsonEncode({
-      'operaciones': operaciones,
-    });
+    final body = jsonEncode({'ventas': operaciones});
 
     final response = await http.post(
       Uri.parse('$baseUrl/ventas/sincronizar-offline'),
@@ -246,20 +307,23 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error en sincronización de ventas');
+      throw Exception(
+        jsonDecode(response.body)['detail'] ??
+            'Error en sincronización de ventas',
+      );
     }
   }
 
-  Future<Map<String, dynamic>> sincronizarReservasLote(List<Map<String, dynamic>> operaciones) async {
+  Future<Map<String, dynamic>> sincronizarReservasLote(
+    List<Map<String, dynamic>> operaciones,
+  ) async {
     final token = await getToken();
     final headers = {
       'Content-Type': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
 
-    final body = jsonEncode({
-      'operaciones': operaciones,
-    });
+    final body = jsonEncode({'reservas': operaciones});
 
     final response = await http.post(
       Uri.parse('$baseUrl/reservas/sincronizar-offline'),
@@ -270,7 +334,62 @@ class ApiService {
     if (response.statusCode == 200) {
       return jsonDecode(response.body);
     } else {
-      throw Exception(jsonDecode(response.body)['detail'] ?? 'Error en sincronización de reservas');
+      throw Exception(
+        jsonDecode(response.body)['detail'] ??
+            'Error en sincronización de reservas',
+      );
+    }
+  }
+
+  Future<int> getEmpresaId() async {
+    final token = await getToken();
+    if (token == null) throw Exception('Inicie sesión');
+    return decodeJwt(token)['empresa_id'] as int;
+  }
+
+  Future<Map<String, String>> authHeaders() async {
+    final token = await getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  Future<dynamic> getJson(String path) async {
+    final r = await http.get(
+      Uri.parse('$baseUrl$path'),
+      headers: await authHeaders(),
+    );
+    if (r.statusCode != 200)
+      throw ApiException(
+        (jsonDecode(r.body)['detail'] ?? 'Error al consultar').toString(),
+        r.statusCode,
+      );
+    return jsonDecode(r.body);
+  }
+
+  Future<dynamic> postJson(String path, dynamic data) async {
+    final r = await http.post(
+      Uri.parse('$baseUrl$path'),
+      headers: await authHeaders(),
+      body: jsonEncode(data),
+    );
+    if (r.statusCode >= 400)
+      throw ApiException(
+        (jsonDecode(r.body)['detail'] ?? 'Error al guardar').toString(),
+        r.statusCode,
+      );
+    return jsonDecode(r.body);
+  }
+
+  Future<List<dynamic>> referencias(String type) async {
+    try {
+      final data = await getJson('/catalogo/$type') as List<dynamic>;
+      await OfflineDbService().guardarReferencia(type, data);
+      return data;
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      return OfflineDbService().getReferencia(type);
     }
   }
 }

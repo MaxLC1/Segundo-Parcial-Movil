@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../services/api_service.dart';
 import 'login_screen.dart';
 
@@ -13,7 +14,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final ApiService _api = ApiService();
   String email = 'Cargando...';
   int userId = 0;
-  
+
   final _passwordController = TextEditingController();
   bool _isLoading = false;
 
@@ -39,17 +40,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _cambiarContrasena() async {
     if (_passwordController.text.length < 8) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La contraseña debe tener al menos 8 caracteres y contener números/símbolos')),
+        const SnackBar(
+          content: Text(
+            'La contraseña debe tener al menos 8 caracteres y contener números/símbolos',
+          ),
+        ),
       );
       return;
     }
-    
+
     setState(() => _isLoading = true);
     try {
       await _api.changePassword(userId, _passwordController.text);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Contraseña actualizada con éxito'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('Contraseña actualizada con éxito'),
+          backgroundColor: Colors.green,
+        ),
       );
       _passwordController.clear();
       Navigator.pop(context); // Cerrar modal
@@ -70,12 +78,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       builder: (context) => Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
-          left: 24, right: 24, top: 24,
+          left: 24,
+          right: 24,
+          top: 24,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('Nueva Contraseña', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const Text(
+              'Nueva Contraseña',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 16),
             TextField(
               controller: _passwordController,
@@ -91,11 +104,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton(
-                style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA580C), foregroundColor: Colors.white),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEA580C),
+                  foregroundColor: Colors.white,
+                ),
                 onPressed: _isLoading ? null : _cambiarContrasena,
-                child: _isLoading 
-                    ? const CircularProgressIndicator(color: Colors.white) 
-                    : const Text('Guardar Contraseña', style: TextStyle(fontSize: 16)),
+                child: _isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Guardar Contraseña',
+                        style: TextStyle(fontSize: 16),
+                      ),
               ),
             ),
             const SizedBox(height: 24),
@@ -119,7 +138,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Mi Perfil', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Mi Perfil',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFEA580C),
         foregroundColor: Colors.white,
       ),
@@ -133,19 +155,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
               CircleAvatar(
                 radius: 50,
                 backgroundColor: const Color(0xFFEA580C).withOpacity(0.2),
-                child: const Icon(Icons.person, size: 60, color: Color(0xFFEA580C)),
+                child: const Icon(
+                  Icons.person,
+                  size: 60,
+                  color: Color(0xFFEA580C),
+                ),
               ),
               const SizedBox(height: 16),
               Text(
                 email,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 48),
-              
+
               // Botón Cambiar Contraseña
               Card(
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
                   leading: const Icon(Icons.lock_reset, color: Colors.blue),
                   title: const Text('Cambiar Contraseña'),
@@ -154,14 +185,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Botón Cerrar Sesión
               Card(
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: ListTile(
                   leading: const Icon(Icons.logout, color: Colors.red),
-                  title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                  title: const Text(
+                    'Cerrar Sesión',
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   onTap: _cerrarSesion,
                 ),
               ),

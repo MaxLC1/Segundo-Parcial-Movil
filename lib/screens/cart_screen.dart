@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import 'package:flutter/services.dart';
+
 import '../services/api_service.dart';
 import '../services/cart_service.dart';
 import '../services/offline_db_service.dart';
@@ -15,7 +17,7 @@ class _CartScreenState extends State<CartScreen> {
   final CartService _cart = CartService();
   final ApiService _api = ApiService();
   final OfflineDbService _db = OfflineDbService();
-  
+
   bool _isLoading = false;
   bool _isLoadingSucursales = true;
   List<dynamic> _sucursales = [];
@@ -59,16 +61,22 @@ class _CartScreenState extends State<CartScreen> {
   void _procesarOrden() {
     if (_cart.items.isEmpty) return;
 
-    if (_tipoEntrega == 'Recojo en Sucursal' && _selectedSucursalId == null) {
+    if (_selectedSucursalId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Selecciona una sucursal para tu reserva.'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Selecciona una sucursal para tu reserva.'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
     if (_tipoEntrega == 'Envío a Domicilio' && _direccionEnvio.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa una dirección de envío.'), backgroundColor: Colors.orange),
+        const SnackBar(
+          content: Text('Ingresa una dirección de envío.'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
@@ -92,39 +100,69 @@ class _CartScreenState extends State<CartScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setStateModal) {
           return AlertDialog(
-            title: Text(isSuccess ? '¡Pago Exitoso!' : 'Pago con QR', textAlign: TextAlign.center),
+            title: Text(
+              isSuccess ? '¡Pago Exitoso!' : 'Pago con QR',
+              textAlign: TextAlign.center,
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!isSuccess) ...[
-                  const Text('Monto a pagar:', style: TextStyle(color: Colors.grey)),
-                  Text('Bs ${_cart.total}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Monto a pagar:',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    'Bs ${_cart.total}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(border: Border.all(color: Colors.grey.shade300), borderRadius: BorderRadius.circular(12)),
-                    child: Image.network('https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=Monto:${_cart.total}', height: 180),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Image.network(
+                      'https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=Monto:${_cart.total}',
+                      height: 180,
+                    ),
                   ),
                   const SizedBox(height: 16),
                   if (isVerifying) ...[
                     const CircularProgressIndicator(),
                     const SizedBox(height: 8),
-                    const Text('Verificando pago...', style: TextStyle(color: Colors.blue)),
+                    const Text(
+                      'Verificando pago...',
+                      style: TextStyle(color: Colors.blue),
+                    ),
                   ] else ...[
-                    const Text('Escanea para pagar', style: TextStyle(color: Colors.grey)),
-                  ]
+                    const Text(
+                      'Escanea para pagar',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ],
                 ] else ...[
                   const Icon(Icons.check_circle, color: Colors.green, size: 80),
                   const SizedBox(height: 16),
-                  const Text('Tu pago ha sido procesado.', style: TextStyle(fontSize: 16)),
-                ]
+                  const Text(
+                    'Tu pago ha sido procesado.',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
               ],
             ),
             actions: [
               if (!isSuccess && !isVerifying)
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               if (!isSuccess && !isVerifying)
                 TextButton(
@@ -145,7 +183,7 @@ class _CartScreenState extends State<CartScreen> {
                 ),
             ],
           );
-        }
+        },
       ),
     );
   }
@@ -160,13 +198,25 @@ class _CartScreenState extends State<CartScreen> {
       builder: (context) => StatefulBuilder(
         builder: (context, setStateModal) {
           return AlertDialog(
-            title: Text(isSuccess ? '¡Pago Exitoso!' : 'Pago con Tarjeta', textAlign: TextAlign.center),
+            title: Text(
+              isSuccess ? '¡Pago Exitoso!' : 'Pago con Tarjeta',
+              textAlign: TextAlign.center,
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (!isSuccess) ...[
-                  const Text('Monto a pagar:', style: TextStyle(color: Colors.grey)),
-                  Text('Bs ${_cart.total}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  const Text(
+                    'Monto a pagar:',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+                  Text(
+                    'Bs ${_cart.total}',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   TextField(
                     keyboardType: TextInputType.number,
@@ -175,7 +225,12 @@ class _CartScreenState extends State<CartScreen> {
                       LengthLimitingTextInputFormatter(16),
                       CardNumberFormatter(),
                     ],
-                    decoration: const InputDecoration(labelText: 'Número de Tarjeta', hintText: '0000 0000 0000 0000', border: OutlineInputBorder(), prefixIcon: Icon(Icons.credit_card))
+                    decoration: const InputDecoration(
+                      labelText: 'Número de Tarjeta',
+                      hintText: '0000 0000 0000 0000',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.credit_card),
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Row(
@@ -188,17 +243,28 @@ class _CartScreenState extends State<CartScreen> {
                             LengthLimitingTextInputFormatter(4),
                             ExpirationDateFormatter(),
                           ],
-                          decoration: const InputDecoration(labelText: 'MM/YY', hintText: '12/25', border: OutlineInputBorder())
-                        )
+                          decoration: const InputDecoration(
+                            labelText: 'MM/YY',
+                            hintText: '12/25',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: TextField(
                           keyboardType: TextInputType.number,
-                          inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(3)],
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(3),
+                          ],
                           obscureText: true,
-                          decoration: const InputDecoration(labelText: 'CVC', hintText: '123', border: OutlineInputBorder())
-                        )
+                          decoration: const InputDecoration(
+                            labelText: 'CVC',
+                            hintText: '123',
+                            border: OutlineInputBorder(),
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -206,24 +272,36 @@ class _CartScreenState extends State<CartScreen> {
                     const SizedBox(height: 16),
                     const CircularProgressIndicator(),
                     const SizedBox(height: 8),
-                    const Text('Procesando...', style: TextStyle(color: Colors.blue)),
-                  ]
+                    const Text(
+                      'Procesando...',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ],
                 ] else ...[
                   const Icon(Icons.check_circle, color: Colors.green, size: 80),
                   const SizedBox(height: 16),
-                  const Text('Tu pago ha sido procesado.', style: TextStyle(fontSize: 16)),
-                ]
+                  const Text(
+                    'Tu pago ha sido procesado.',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                ],
               ],
             ),
             actions: [
               if (!isSuccess && !isProcessing)
                 TextButton(
                   onPressed: () => Navigator.pop(context),
-                  child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                  child: const Text(
+                    'Cancelar',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ),
               if (!isSuccess && !isProcessing)
                 ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () async {
                     setStateModal(() => isProcessing = true);
                     await Future.delayed(const Duration(seconds: 2));
@@ -241,27 +319,54 @@ class _CartScreenState extends State<CartScreen> {
                 ),
             ],
           );
-        }
+        },
       ),
     );
   }
 
+  String? _operationUuid;
   Future<void> _confirmarPedidoFinal() async {
+    _operationUuid ??= const Uuid().v4();
     setState(() => _isLoading = true);
     try {
       if (_tipoEntrega == 'Recojo en Sucursal') {
-        await _api.crearReserva(_cart.items, _selectedSucursalId!);
+        await _api.crearReserva(
+          _cart.items,
+          _selectedSucursalId!,
+          operacionUuid: _operationUuid,
+        );
       } else {
-        await _api.crearVenta(_cart.items, 'Delivery', _direccionEnvio, _metodoPago);
+        await _api.crearVenta(
+          _cart.items,
+          'Delivery',
+          _direccionEnvio,
+          _metodoPago,
+          sucursalId: _selectedSucursalId,
+          operacionUuid: _operationUuid,
+        );
       }
-      
+
       if (!mounted) return;
+      _operationUuid = null;
       _cart.clear(); // Limpiamos el carrito
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('¡Pedido online confirmado con éxito!'), backgroundColor: Colors.green),
+        const SnackBar(
+          content: Text('¡Pedido online confirmado con éxito!'),
+          backgroundColor: Colors.green,
+        ),
       );
     } catch (e) {
-      // Fallback a SQLite local si no hay conexión o falla el backend (Desafío III & IV)
+      if (e is ApiException ||
+          (_tipoEntrega != 'Recojo en Sucursal' && _metodoPago != 'Efectivo')) {
+        if (mounted)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('$e. Sin conexión solo se admite efectivo.'),
+            ),
+          );
+        return;
+      }
+      // Conservar operaciones únicamente ante un fallo de comunicación.
       try {
         final token = await _api.getToken();
         int userId = 1;
@@ -270,19 +375,24 @@ class _CartScreenState extends State<CartScreen> {
           userId = decoded['id'] ?? 1;
         }
 
-        final detalles = _cart.items.map((item) => {
-          'producto_id': item.productoId,
-          'talla_id': item.tallaId,
-          'color_id': item.colorId,
-          'cantidad': item.cantidad,
-          'precio_unitario': item.precioUnitario,
-          'subtotal': item.cantidad * item.precioUnitario,
-        }).toList();
+        final detalles = _cart.items
+            .map(
+              (item) => {
+                'producto_id': item.productoId,
+                'talla_id': item.tallaId,
+                'color_id': item.colorId,
+                'cantidad': item.cantidad,
+                'precio_unitario': item.precioUnitario,
+                'subtotal': item.cantidad * item.precioUnitario,
+              },
+            )
+            .toList();
 
         String uuid;
         if (_tipoEntrega == 'Recojo en Sucursal') {
           uuid = await _db.registrarReservaOffline(
             sucursalId: _selectedSucursalId ?? 1,
+            operationUuid: _operationUuid,
             usuarioId: userId,
             total: _cart.total,
             detalles: detalles,
@@ -290,6 +400,7 @@ class _CartScreenState extends State<CartScreen> {
         } else {
           uuid = await _db.registrarVentaOffline(
             sucursalId: _selectedSucursalId ?? 1,
+            operationUuid: _operationUuid,
             usuarioId: userId,
             metodoPago: _metodoPago,
             tipoEntrega: _tipoEntrega,
@@ -300,10 +411,13 @@ class _CartScreenState extends State<CartScreen> {
         }
 
         if (!mounted) return;
+        _operationUuid = null;
         _cart.clear();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Guardado en SQLite local (UUID: ${uuid.substring(0, 8)}...). Sincronización pendiente.'),
+            content: Text(
+              'Guardado en SQLite local (UUID: ${uuid.substring(0, 8)}...). Sincronización pendiente.',
+            ),
             backgroundColor: Colors.orange.shade800,
             duration: const Duration(seconds: 4),
           ),
@@ -311,7 +425,10 @@ class _CartScreenState extends State<CartScreen> {
       } catch (dbError) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e / SQLite: $dbError'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Error: $e / SQLite: $dbError'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -326,7 +443,10 @@ class _CartScreenState extends State<CartScreen> {
       builder: (context, _) {
         if (_cart.items.isEmpty) {
           return const Center(
-            child: Text('Tu bolsa de reservas está vacía.', style: TextStyle(fontSize: 16)),
+            child: Text(
+              'Tu bolsa de reservas está vacía.',
+              style: TextStyle(fontSize: 16),
+            ),
           );
         }
 
@@ -338,16 +458,30 @@ class _CartScreenState extends State<CartScreen> {
                 itemBuilder: (context, index) {
                   final item = _cart.items[index];
                   return Card(
-                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: ListTile(
-                      title: Text(item.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('Cantidad: ${item.cantidad}  -  Unitario: Bs ${item.precioUnitario}'),
+                      title: Text(
+                        item.nombre,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      subtitle: Text(
+                        'Cantidad: ${item.cantidad}  -  Unitario: Bs ${item.precioUnitario}',
+                      ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('Bs ${item.subtotal}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(
+                            'Bs ${item.subtotal}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
                           IconButton(
-                            icon: const Icon(Icons.delete_outline, color: Colors.red),
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: Colors.red,
+                            ),
                             onPressed: () => _cart.removeItem(item.productoId),
                           ),
                         ],
@@ -357,13 +491,19 @@ class _CartScreenState extends State<CartScreen> {
                 },
               ),
             ),
-            
+
             // Footer con selección de sucursal y total
             Container(
               padding: const EdgeInsets.all(20),
               decoration: const BoxDecoration(
                 color: Colors.white,
-                boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -2))],
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 10,
+                    offset: Offset(0, -2),
+                  ),
+                ],
               ),
               child: SafeArea(
                 child: Column(
@@ -374,21 +514,29 @@ class _CartScreenState extends State<CartScreen> {
                       value: _tipoEntrega,
                       decoration: InputDecoration(
                         labelText: '¿Cómo quieres recibir tu pedido?',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
-                      items: ['Recojo en Sucursal', 'Envío a Domicilio'].map((String val) {
+                      items: ['Recojo en Sucursal', 'Envío a Domicilio'].map((
+                        String val,
+                      ) {
                         return DropdownMenuItem<String>(
                           value: val,
                           child: Text(val),
                         );
                       }).toList(),
-                      onChanged: (newValue) => setState(() => _tipoEntrega = newValue!),
+                      onChanged: (newValue) =>
+                          setState(() => _tipoEntrega = newValue!),
                     ),
                     const SizedBox(height: 12),
 
                     // Selector de Sucursal (Solo si es Recojo)
-                    if (_tipoEntrega == 'Recojo en Sucursal')
+                    if (true)
                       if (_isLoadingSucursales)
                         const Center(child: CircularProgressIndicator())
                       else
@@ -396,16 +544,26 @@ class _CartScreenState extends State<CartScreen> {
                           value: _selectedSucursalId,
                           decoration: InputDecoration(
                             labelText: 'Selecciona una Sucursal',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                           ),
-                          items: _sucursales.map<DropdownMenuItem<int>>((sucursal) {
+                          items: _sucursales.map<DropdownMenuItem<int>>((
+                            sucursal,
+                          ) {
                             return DropdownMenuItem<int>(
                               value: sucursal['id'],
-                              child: Text('${sucursal['nombre']} - ${sucursal['direccion']}'),
+                              child: Text(
+                                '${sucursal['nombre']} - ${sucursal['direccion']}',
+                              ),
                             );
                           }).toList(),
-                          onChanged: (newValue) => setState(() => _selectedSucursalId = newValue),
+                          onChanged: (newValue) =>
+                              setState(() => _selectedSucursalId = newValue),
                         ),
 
                     if (_tipoEntrega == 'Envío a Domicilio') ...[
@@ -413,39 +571,69 @@ class _CartScreenState extends State<CartScreen> {
                         decoration: InputDecoration(
                           labelText: 'Dirección de Envío',
                           hintText: 'Ej: Calle 123, Zona Sur',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
                         ),
                         onChanged: (val) => _direccionEnvio = val,
                       ),
                     ],
 
                     const SizedBox(height: 12),
-                    
+
                     // Método de pago para ambos (Delivery y Recojo)
                     DropdownButtonFormField<String>(
                       value: _metodoPago,
                       decoration: InputDecoration(
                         labelText: 'Método de Pago',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
                       ),
                       items: ['Efectivo', 'QR', 'Stripe'].map((String val) {
                         return DropdownMenuItem<String>(
                           value: val,
-                          child: Text(val == 'Efectivo' ? 'Efectivo al recibir' : (val == 'QR' ? 'Pago con QR' : 'Tarjeta Stripe')),
+                          child: Text(
+                            val == 'Efectivo'
+                                ? 'Efectivo al recibir'
+                                : (val == 'QR'
+                                      ? 'Pago con QR'
+                                      : 'Tarjeta Stripe'),
+                          ),
                         );
                       }).toList(),
-                      onChanged: (newValue) => setState(() => _metodoPago = newValue!),
+                      onChanged: (newValue) =>
+                          setState(() => _metodoPago = newValue!),
                     ),
 
                     const SizedBox(height: 16),
-                    
+
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Total:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                        Text('Bs ${_cart.total}', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black)),
+                        const Text(
+                          'Total:',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Bs ${_cart.total}',
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 16),
@@ -455,12 +643,24 @@ class _CartScreenState extends State<CartScreen> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         onPressed: _isLoading ? null : _procesarOrden,
-                        child: _isLoading 
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : Text(_tipoEntrega == 'Recojo en Sucursal' ? 'CONFIRMAR RESERVA' : 'CONFIRMAR PEDIDO', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : Text(
+                                _tipoEntrega == 'Recojo en Sucursal'
+                                    ? 'CONFIRMAR RESERVA'
+                                    : 'CONFIRMAR PEDIDO',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                       ),
                     ),
                   ],
@@ -477,7 +677,10 @@ class _CartScreenState extends State<CartScreen> {
 // Formatters para Tarjeta
 class CardNumberFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var text = newValue.text.replaceAll(RegExp(r'\D'), '');
     var buffer = StringBuffer();
     for (int i = 0; i < text.length; i++) {
@@ -488,13 +691,19 @@ class CardNumberFormatter extends TextInputFormatter {
       }
     }
     var string = buffer.toString();
-    return newValue.copyWith(text: string, selection: TextSelection.collapsed(offset: string.length));
+    return newValue.copyWith(
+      text: string,
+      selection: TextSelection.collapsed(offset: string.length),
+    );
   }
 }
 
 class ExpirationDateFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
     var text = newValue.text.replaceAll(RegExp(r'\D'), '');
     var buffer = StringBuffer();
     for (int i = 0; i < text.length; i++) {
@@ -505,7 +714,9 @@ class ExpirationDateFormatter extends TextInputFormatter {
       }
     }
     var string = buffer.toString();
-    return newValue.copyWith(text: string, selection: TextSelection.collapsed(offset: string.length));
+    return newValue.copyWith(
+      text: string,
+      selection: TextSelection.collapsed(offset: string.length),
+    );
   }
 }
-

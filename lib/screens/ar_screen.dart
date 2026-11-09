@@ -20,7 +20,10 @@ class _ARScreenState extends State<ARScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('AR: ${widget.nombreProducto}', style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(
+          'AR: ${widget.nombreProducto}',
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
       ),
@@ -39,7 +42,7 @@ class _ARScreenState extends State<ARScreen> {
               disableZoom: false,
             ),
           ),
-          
+
           // Indicador para el usuario
           Positioned(
             top: 20,
@@ -50,7 +53,9 @@ class _ARScreenState extends State<ARScreen> {
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.9),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
+                boxShadow: const [
+                  BoxShadow(color: Colors.black26, blurRadius: 8),
+                ],
               ),
               child: const Row(
                 children: [
@@ -65,7 +70,7 @@ class _ARScreenState extends State<ARScreen> {
                 ],
               ),
             ),
-          )
+          ),
         ],
       ),
     );

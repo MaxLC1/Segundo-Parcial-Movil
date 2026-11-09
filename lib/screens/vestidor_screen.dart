@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+
 import 'dart:io';
+
 import 'package:image_picker/image_picker.dart';
+
 import '../services/api_service.dart';
 import '../services/cart_service.dart';
 
@@ -36,8 +39,12 @@ class _VestidorScreenState extends State<VestidorScreen> {
         _productos = data.where((p) => p['imagen_url'] != null).map((p) {
           if (p['imagen_url'] != null) {
             // Reemplazamos la IP si hace falta, y usamos el endpoint proxy-nobg
-            String rawUrl = p['imagen_url'].toString().replaceAll('localhost', '10.0.2.2');
-            p['imagen_url'] = '${ApiService.baseUrl}/archivos/proxy-nobg?url=${Uri.encodeComponent(rawUrl)}';
+            String rawUrl = p['imagen_url'].toString().replaceAll(
+              'localhost',
+              '10.0.2.2',
+            );
+            p['imagen_url'] =
+                '${ApiService.baseUrl}/archivos/proxy-nobg?url=${Uri.encodeComponent(rawUrl)}';
           }
           return p;
         }).toList();
@@ -52,7 +59,7 @@ class _VestidorScreenState extends State<VestidorScreen> {
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-    
+
     if (image != null) {
       setState(() {
         _userImage = File(image.path);
@@ -67,7 +74,7 @@ class _VestidorScreenState extends State<VestidorScreen> {
     try {
       final colores = await _api.getColores();
       if (!mounted) return;
-      
+
       showModalBottomSheet(
         context: context,
         builder: (context) {
@@ -77,7 +84,13 @@ class _VestidorScreenState extends State<VestidorScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Elige el color para ${_selectedProduct['nombre']}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(
+                  'Elige el color para ${_selectedProduct['nombre']}',
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 16),
                 Wrap(
                   spacing: 10,
@@ -87,14 +100,18 @@ class _VestidorScreenState extends State<VestidorScreen> {
                       onPressed: () {
                         Navigator.pop(context);
                         CartService().addItem(
-                          _selectedProduct['id'], 
-                          _selectedProduct['nombre'], 
+                          _selectedProduct['id'],
+                          _selectedProduct['nombre'],
                           (_selectedProduct['precio'] ?? 0).toDouble(),
                           colorId: c['id'],
                           colorName: c['nombre'],
                         );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('${_selectedProduct['nombre']} (${c['nombre']}) añadido a tus reservas')),
+                          SnackBar(
+                            content: Text(
+                              '${_selectedProduct['nombre']} (${c['nombre']}) añadido a tus reservas',
+                            ),
+                          ),
                         );
                       },
                     );
@@ -103,12 +120,11 @@ class _VestidorScreenState extends State<VestidorScreen> {
               ],
             ),
           );
-        }
+        },
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cargar colores: $e')),
-      );
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Error al cargar colores: $e')));
     }
   }
 
@@ -116,7 +132,10 @@ class _VestidorScreenState extends State<VestidorScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Vestidor IA', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Vestidor IA',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFEA580C),
         foregroundColor: Colors.white,
       ),
@@ -129,10 +148,17 @@ class _VestidorScreenState extends State<VestidorScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.black, foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: _pickImage,
                   icon: const Icon(Icons.camera_alt),
-                  label: Text(_userImage == null ? 'Subir Foto de Cuerpo Completo' : 'Cambiar Foto'),
+                  label: Text(
+                    _userImage == null
+                        ? 'Subir Foto de Cuerpo Completo'
+                        : 'Cambiar Foto',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 if (_isLoading)
@@ -143,7 +169,10 @@ class _VestidorScreenState extends State<VestidorScreen> {
                     decoration: const InputDecoration(
                       labelText: 'Selecciona una Prenda',
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                     ),
                     items: _productos.map<DropdownMenuItem<dynamic>>((p) {
                       return DropdownMenuItem<dynamic>(
@@ -156,19 +185,25 @@ class _VestidorScreenState extends State<VestidorScreen> {
               ],
             ),
           ),
-          
+
           Expanded(
             child: Container(
               color: Colors.grey[200],
               child: _userImage == null
-                  ? const Center(child: Text('Sube tu foto para empezar', style: TextStyle(color: Colors.grey)))
+                  ? const Center(
+                      child: Text(
+                        'Sube tu foto para empezar',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                    )
                   : ClipRect(
                       child: Stack(
                         children: [
                           Positioned.fill(
                             child: Image.file(_userImage!, fit: BoxFit.contain),
                           ),
-                          if (_selectedProduct != null && _selectedProduct['imagen_url'] != null)
+                          if (_selectedProduct != null &&
+                              _selectedProduct['imagen_url'] != null)
                             Positioned(
                               left: _position.dx,
                               top: _position.dy,
@@ -191,12 +226,15 @@ class _VestidorScreenState extends State<VestidorScreen> {
                                   child: Image.network(
                                     _selectedProduct['imagen_url'],
                                     width: 200, // Tamaño inicial
-                                    errorBuilder: (c, e, s) => const Icon(Icons.broken_image, size: 100),
+                                    errorBuilder: (c, e, s) => const Icon(
+                                      Icons.broken_image,
+                                      size: 100,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                            
+
                           if (_selectedProduct != null)
                             Positioned(
                               bottom: 16,
@@ -204,20 +242,26 @@ class _VestidorScreenState extends State<VestidorScreen> {
                               right: 16,
                               child: Container(
                                 padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(color: Colors.black87, borderRadius: BorderRadius.circular(8)),
+                                decoration: BoxDecoration(
+                                  color: Colors.black87,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                                 child: const Text(
                                   'Pellizca para cambiar tamaño o rotar. Arrastra para mover.',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.white, fontSize: 12),
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
-                            )
+                            ),
                         ],
                       ),
                     ),
             ),
           ),
-          
+
           if (_userImage != null && _selectedProduct != null)
             Container(
               padding: const EdgeInsets.all(16),
@@ -226,12 +270,18 @@ class _VestidorScreenState extends State<VestidorScreen> {
                 width: double.infinity,
                 height: 50,
                 child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA580C), foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFEA580C),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
                     _mostrarOpcionesProducto();
                   },
                   icon: const Icon(Icons.shopping_cart),
-                  label: const Text('Me encanta, añadir a la bolsa', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  label: const Text(
+                    'Me encanta, añadir a la bolsa',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
             ),

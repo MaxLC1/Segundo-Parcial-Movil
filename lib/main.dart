@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'screens/login_screen.dart';
 import 'screens/main_screen.dart';
 import 'services/api_service.dart';
@@ -28,7 +29,9 @@ class TiendaARApp extends StatelessWidget {
         future: ApiService().getToken(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
           if (snapshot.hasData && snapshot.data != null) {
             return const MainScreen();

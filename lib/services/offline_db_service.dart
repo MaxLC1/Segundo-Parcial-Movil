@@ -1,4 +1,7 @@
 import 'dart:convert';
+
+import 'api_service.dart';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:uuid/uuid.dart';
@@ -9,22 +12,39 @@ class OfflineDbService {
   OfflineDbService._internal();
 
   static Database? _database;
+  static String? _scope;
+  final Map<String, Future<Database>> _opening = {};
   final Uuid _uuid = const Uuid();
 
   Future<Database> get database async {
-    if (_database != null) return _database!;
-    _database = await _initDb();
+    final token = await ApiService().getToken();
+    final claims = token == null
+        ? <String, dynamic>{}
+        : ApiService().decodeJwt(token);
+    final scope =
+        "${claims['empresa_id'] ?? 'public'}_${claims['id'] ?? 'public'}";
+    if (_database != null && _scope == scope) return _database!;
+    _scope = scope;
+    _database = await _opening.putIfAbsent(scope, () => _initDb(scope));
     return _database!;
   }
 
-  Future<Database> _initDb() async {
+  Future<Database> _initDb(String scope) async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'fashionstore_mobile_offline.db');
+    final path = join(dbPath, 'fashionstore_mobile_$scope.db');
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
+      onUpgrade: (db, oldVersion, newVersion) async {
+        await db.execute(
+          'CREATE TABLE IF NOT EXISTS referencias (clave TEXT PRIMARY KEY, datos TEXT)',
+        );
+      },
       onCreate: (db, version) async {
+        await db.execute(
+          'CREATE TABLE IF NOT EXISTS referencias (clave TEXT PRIMARY KEY, datos TEXT)',
+        );
         // 1. Tabla de Catálogo Local (Cache SQLite)
         await db.execute('''
           CREATE TABLE IF NOT EXISTS catalogo_cache (
@@ -89,7 +109,10 @@ class OfflineDbService {
 
   // --- CATÁLOGO & SUCURSALES CACHE ---
 
-  Future<void> guardarCatalogoLocal(List<dynamic> productos, {int empresaId = 1}) async {
+  Future<void> guardarCatalogoLocal(
+    List<dynamic> productos, {
+    int empresaId = 1,
+  }) async {
     final db = await database;
     final batch = db.batch();
     final fechaActual = DateTime.now().toIso8601String();
@@ -97,20 +120,16 @@ class OfflineDbService {
     await db.delete('catalogo_cache'); // Limpiar caché anterior
 
     for (var p in productos) {
-      batch.insert(
-        'catalogo_cache',
-        {
-          'id': p['id'],
-          'empresa_id': p['empresa_id'] ?? empresaId,
-          'nombre': p['nombre'] ?? '',
-          'codigo': p['codigo'] ?? '',
-          'precio': (p['precio'] as num?)?.toDouble() ?? 0.0,
-          'imagen_url': p['imagen_url'] ?? '',
-          'categoria_id': p['categoria_id'] ?? 1,
-          'fecha_guardado': fechaActual,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      batch.insert('catalogo_cache', {
+        'id': p['id'],
+        'empresa_id': p['empresa_id'] ?? empresaId,
+        'nombre': p['nombre'] ?? '',
+        'codigo': p['codigo'] ?? '',
+        'precio': (p['precio'] as num?)?.toDouble() ?? 0.0,
+        'imagen_url': p['imagen_url'] ?? '',
+        'categoria_id': p['categoria_id'] ?? 1,
+        'fecha_guardado': fechaActual,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
@@ -120,24 +139,23 @@ class OfflineDbService {
     return await db.query('catalogo_cache', orderBy: 'id ASC');
   }
 
-  Future<void> guardarSucursalesLocal(List<dynamic> sucursales, {int empresaId = 1}) async {
+  Future<void> guardarSucursalesLocal(
+    List<dynamic> sucursales, {
+    int empresaId = 1,
+  }) async {
     final db = await database;
     final batch = db.batch();
 
     await db.delete('sucursales_cache');
 
     for (var s in sucursales) {
-      batch.insert(
-        'sucursales_cache',
-        {
-          'id': s['id'],
-          'empresa_id': s['empresa_id'] ?? empresaId,
-          'nombre': s['nombre'] ?? '',
-          'direccion': s['direccion'] ?? '',
-          'ciudad_id': s['ciudad_id'] ?? 1,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      batch.insert('sucursales_cache', {
+        'id': s['id'],
+        'empresa_id': s['empresa_id'] ?? empresaId,
+        'nombre': s['nombre'] ?? '',
+        'direccion': s['direccion'] ?? '',
+        'ciudad_id': s['ciudad_id'] ?? 1,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await batch.commit(noResult: true);
   }
@@ -158,10 +176,12 @@ class OfflineDbService {
     required double total,
     required List<dynamic> detalles,
     int empresaId = 1,
+    String? operationUuid,
     int? clienteId,
   }) async {
     final db = await database;
-    final String operacionUuid = _uuid.v4();
+    empresaId = await ApiService().getEmpresaId();
+    final String operacionUuid = operationUuid ?? _uuid.v4();
     final String fecha = DateTime.now().toIso8601String();
 
     await db.insert('ventas_offline', {
@@ -191,9 +211,11 @@ class OfflineDbService {
     required double total,
     required List<dynamic> detalles,
     int empresaId = 1,
+    String? operationUuid,
   }) async {
     final db = await database;
-    final String operacionUuid = _uuid.v4();
+    empresaId = await ApiService().getEmpresaId();
+    final String operacionUuid = operationUuid ?? _uuid.v4();
     final String fecha = DateTime.now().toIso8601String();
 
     await db.insert('reservas_offline', {
@@ -243,27 +265,29 @@ class OfflineDbService {
     return await db.query('reservas_offline', orderBy: 'fecha DESC');
   }
 
-  Future<void> actualizarEstadoVenta(String uuid, String estado, {String? motivo}) async {
+  Future<void> actualizarEstadoVenta(
+    String uuid,
+    String estado, {
+    String? motivo,
+  }) async {
     final db = await database;
     await db.update(
       'ventas_offline',
-      {
-        'estado_sincronizacion': estado,
-        'motivo_rechazo': motivo,
-      },
+      {'estado_sincronizacion': estado, 'motivo_rechazo': motivo},
       where: 'operacion_uuid = ?',
       whereArgs: [uuid],
     );
   }
 
-  Future<void> actualizarEstadoReserva(String uuid, String estado, {String? motivo}) async {
+  Future<void> actualizarEstadoReserva(
+    String uuid,
+    String estado, {
+    String? motivo,
+  }) async {
     final db = await database;
     await db.update(
       'reservas_offline',
-      {
-        'estado_sincronizacion': estado,
-        'motivo_rechazo': motivo,
-      },
+      {'estado_sincronizacion': estado, 'motivo_rechazo': motivo},
       where: 'operacion_uuid = ?',
       whereArgs: [uuid],
     );
@@ -271,18 +295,52 @@ class OfflineDbService {
 
   Future<int> contarOperacionesPendientes() async {
     final db = await database;
-    final countVentas = Sqflite.firstIntValue(await db.rawQuery(
-      "SELECT COUNT(*) FROM ventas_offline WHERE estado_sincronizacion = 'REGISTRADA_LOCAL'"
-    )) ?? 0;
-    final countReservas = Sqflite.firstIntValue(await db.rawQuery(
-      "SELECT COUNT(*) FROM reservas_offline WHERE estado_sincronizacion = 'REGISTRADA_LOCAL'"
-    )) ?? 0;
+    final countVentas =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            "SELECT COUNT(*) FROM ventas_offline WHERE estado_sincronizacion = 'REGISTRADA_LOCAL'",
+          ),
+        ) ??
+        0;
+    final countReservas =
+        Sqflite.firstIntValue(
+          await db.rawQuery(
+            "SELECT COUNT(*) FROM reservas_offline WHERE estado_sincronizacion = 'REGISTRADA_LOCAL'",
+          ),
+        ) ??
+        0;
     return countVentas + countReservas;
   }
 
   Future<void> limpiarTodasOperaciones() async {
     final db = await database;
-    await db.delete('ventas_offline');
-    await db.delete('reservas_offline');
+    await db.delete(
+      'ventas_offline',
+      where: "estado_sincronizacion = 'CONFIRMADA'",
+    );
+    await db.delete(
+      'reservas_offline',
+      where: "estado_sincronizacion = 'CONFIRMADA'",
+    );
+  }
+
+  Future<void> guardarReferencia(String clave, dynamic datos) async {
+    final db = await database;
+    await db.insert('referencias', {
+      'clave': clave,
+      'datos': jsonEncode(datos),
+    }, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<List<dynamic>> getReferencia(String clave) async {
+    final db = await database;
+    final rows = await db.query(
+      'referencias',
+      where: 'clave = ?',
+      whereArgs: [clave],
+    );
+    return rows.isEmpty
+        ? []
+        : jsonDecode(rows.first['datos'] as String) as List<dynamic>;
   }
 }

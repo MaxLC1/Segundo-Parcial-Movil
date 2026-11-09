@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../services/api_service.dart';
 import 'main_screen.dart';
 
@@ -12,7 +13,7 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _api = ApiService();
-  
+
   String nombre = '';
   String correo = '';
   String password = '';
@@ -22,17 +23,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _registrar() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
-    
+
     setState(() => isLoading = true);
-    
+
     try {
       final response = await _api.registrarCliente(nombre, correo, password);
       if (response != null) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cuenta creada exitosamente'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Cuenta creada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
         );
-        
+
         // Redirigir al MainScreen
         Navigator.pushReplacement(
           context,
@@ -59,15 +63,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.shopping_bag, size: 80, color: Color(0xFFEA580C)),
+              const Icon(
+                Icons.shopping_bag,
+                size: 80,
+                color: Color(0xFFEA580C),
+              ),
               const SizedBox(height: 24),
               const Text(
                 'Crear Cuenta',
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
-              const Text('Únete para probarte ropa en AR', style: TextStyle(color: Colors.grey)),
+              const Text(
+                'Únete para probarte ropa en AR',
+                style: TextStyle(color: Colors.grey),
+              ),
               const SizedBox(height: 40),
-              
+
               Form(
                 key: _formKey,
                 child: Column(
@@ -91,7 +102,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fillColor: Colors.white,
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      validator: (v) => !v!.contains('@') ? 'Correo inválido' : null,
+                      validator: (v) =>
+                          !v!.contains('@') ? 'Correo inválido' : null,
                       onSaved: (v) => correo = v!,
                     ),
                     const SizedBox(height: 16),
@@ -103,7 +115,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         fillColor: Colors.white,
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                            _obscurePassword
+                                ? Icons.visibility
+                                : Icons.visibility_off,
                             color: Colors.grey,
                           ),
                           onPressed: () {
@@ -114,7 +128,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                       ),
                       obscureText: _obscurePassword,
-                      validator: (v) => v!.length < 8 ? 'Mínimo 8 caracteres' : null,
+                      validator: (v) =>
+                          v!.length < 8 ? 'Mínimo 8 caracteres' : null,
                       onSaved: (v) => password = v!,
                     ),
                     const SizedBox(height: 32),
@@ -127,9 +142,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           foregroundColor: Colors.white,
                         ),
                         onPressed: isLoading ? null : _registrar,
-                        child: isLoading 
-                            ? const CircularProgressIndicator(color: Colors.white)
-                            : const Text('Registrarse', style: TextStyle(fontSize: 18)),
+                        child: isLoading
+                            ? const CircularProgressIndicator(
+                                color: Colors.white,
+                              )
+                            : const Text(
+                                'Registrarse',
+                                style: TextStyle(fontSize: 18),
+                              ),
                       ),
                     ),
                   ],
